@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qashio ⇄ QuickBooks — Reconciliation Ledger</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%2314201B%22/%3E%3Ccircle cx=%2222%22 cy=%2225%22 r=%2214%22 fill=%22%232CA01C%22/%3E%3Ccircle cx=%2242%22 cy=%2225%22 r=%2214%22 fill=%22%236C4DFF%22 stroke=%22%2314201B%22 stroke-width=%222.5%22/%3E%3Ccircle cx=%2219%22 cy=%2225%22 r=%225%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%223%22/%3E%3Cpath d=%22M24.2 20v13%22 stroke=%22%23fff%22 stroke-width=%223%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2242%22 cy=%2225%22 r=%226%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%223%22/%3E%3Cpath d=%22M45 28.5l5.5 5.5%22 stroke=%22%23fff%22 stroke-width=%223%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M14 47H50M45 43l5 4-5 4%22 fill=%22none%22 stroke=%22%23F2B84B%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M50 56H14M19 52l-5 4 5 4%22 fill=%22none%22 stroke=%22%23F2B84B%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicons/favicon-16.png">
+<link rel="shortcut icon" href="favicons/favicon.ico">
+<link rel="apple-touch-icon" href="favicons/apple-touch-icon.png">
+<meta name="theme-color" content="#14201B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#EDEAE0;
+    --panel:#F7F5EE;
+    --panel-raised:#FFFFFF;
+    --ink:#1B231F;
+    --ink-soft:#4B564F;
+    --green:#1F5C4E;
+    --green-dark:#153F35;
+    --green-tint:#E4EEE9;
+    --amber:#B8862E;
+    --amber-tint:#F5ECDA;
+    --red:#A63D40;
+    --red-tint:#F5E3E1;
+    --line:#D9D3C2;
+    --line-soft:#E7E2D3;
+    --radius:10px;
+    --radius-sm:6px;
+    --shadow-sm:0 1px 2px rgba(27,35,31,.06), 0 1px 1px rgba(27,35,31,.04);
+    --shadow-md:0 4px 14px rgba(27,35,31,.08), 0 1px 3px rgba(27,35,31,.06);
+    --shadow-lg:0 12px 32px rgba(27,35,31,.12), 0 2px 6px rgba(27,35,31,.06);
+    --ease:cubic-bezier(.2,.7,.3,1);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(31,92,78,.05), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(184,134,46,.045), transparent 55%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 28px 90px;}
+
+  header.masthead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;margin-bottom:32px;flex-wrap:wrap;gap:12px;
+  }
+  .wordmark{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:30px;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    display:flex;align-items:center;gap:10px;
+  }
+  .wordmark .mark{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(155deg,var(--green),var(--green-dark));
+    color:#fff;font-size:15px;box-shadow:var(--shadow-sm);flex:none;
+  }
+  .wordmark span{color:var(--green);font-style:italic;font-weight:500;}
+  .tagline{color:var(--ink-soft);font-size:12.5px;max-width:360px;text-align:right;}
+
+  section{margin-bottom:34px;}
+  .step-title{display:flex;align-items:center;gap:11px;margin:0 0 14px 0;}
+  .step-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;flex:none;
+    background:var(--ink);color:var(--paper);
+    font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11.5px;
+  }
+  section.done .step-num{background:var(--green);}
+  h2.section-title{
+    font-family:'Fraunces',serif;font-weight:600;font-size:19px;
+    margin:0;color:var(--ink);
+  }
+
+  /* Upload panel */
+  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:720px){.upload-grid{grid-template-columns:1fr;}}
+  .dropzone{
+    background:var(--panel-raised);
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    min-height:150px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:var(--shadow-sm);
+    transition:border-color .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease);
+  }
+  .dropzone.hover{border-color:var(--green);background:var(--green-tint);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .dropzone.filled{border-style:solid;border-color:var(--green);}
+  .dz-top{display:flex;align-items:flex-start;gap:12px;}
+  .dz-icon{
+    flex:none;width:34px;height:34px;border-radius:9px;
+    background:var(--green-tint);color:var(--green-dark);
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    transition:background .18s var(--ease), color .18s var(--ease);
+  }
+  .dropzone.filled .dz-icon{background:var(--green);color:#fff;}
+  .dz-label{font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+  .dz-file{margin-top:6px;font-size:13px;color:var(--ink);word-break:break-all;}
+  .dz-file.empty{color:var(--ink-soft);font-style:italic;}
+  .dz-hint{margin-top:10px;font-size:11.5px;color:var(--ink-soft);}
+  input[type=file]{display:none;}
+  .dz-btn{
+    align-self:flex-start;margin-top:14px;
+    background:var(--ink);color:var(--paper);
+    border:none;padding:8px 14px;font-family:inherit;font-size:12px;font-weight:600;
+    border-radius:var(--radius-sm);cursor:pointer;letter-spacing:.02em;
+    transition:background .15s var(--ease), transform .15s var(--ease);
+  }
+  .dz-btn:hover{background:var(--green-dark);transform:translateY(-1px);}
+
+  .qb-account-picker{margin-top:12px;font-size:12px;}
+  .qb-account-picker select{
+    font-family:inherit;font-size:12px;padding:5px 8px;border:1px solid var(--line);
+    border-radius:var(--radius-sm);background:#fff;max-width:100%;
+  }
+
+  /* Advanced tolerance settings */
+  details.adv{
+    margin-top:18px;background:var(--panel-raised);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;
+  }
+  details.adv summary{
+    list-style:none;cursor:pointer;padding:13px 18px;font-size:12.5px;font-weight:600;
+    display:flex;align-items:center;gap:9px;color:var(--ink);user-select:none;
+  }
+  details.adv summary::-webkit-details-marker{display:none;}
+  details.adv summary .chev{transition:transform .18s var(--ease);color:var(--ink-soft);font-size:11px;}
+  details.adv[open] summary .chev{transform:rotate(90deg);}
+  details.adv summary .gear{color:var(--ink-soft);}
+  .adv-body{padding:4px 18px 18px;border-top:1px solid var(--line-soft);}
+  .adv-desc{font-size:11.5px;color:var(--ink-soft);margin:12px 0 14px;max-width:640px;}
+  .tol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:720px){.tol-grid{grid-template-columns:1fr;}}
+  .tol-field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:6px;}
+  .tol-field .tol-input-row{display:flex;align-items:center;gap:8px;}
+  .tol-field input[type=number]{
+    width:78px;font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);
+    border-radius:var(--radius-sm);background:#fff;color:var(--ink);
+  }
+  .tol-field input[type=number]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+  .tol-field .tol-unit{font-size:11.5px;color:var(--ink-soft);}
+  .tol-field .tol-hint{margin-top:6px;font-size:10.5px;color:var(--ink-soft);line-height:1.4;}
+
+  .run-row{display:flex;align-items:center;gap:16px;margin-top:22px;flex-wrap:wrap;}
+  .run-btn{
+    background:linear-gradient(155deg,var(--green),var(--green-dark));color:#fff;border:none;
+    padding:13px 26px;font-family:inherit;font-weight:700;font-size:13.5px;
+    border-radius:var(--radius-sm);cursor:pointer;letter-spacing:.02em;
+    box-shadow:var(--shadow-sm);
+    transition:box-shadow .18s var(--ease), transform .18s var(--ease), background .18s var(--ease);
+  }
+  .run-btn:disabled{background:#B9C2BC;cursor:not-allowed;box-shadow:none;}
+  .run-btn:not(:disabled):hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  .run-btn:not(:disabled):active{transform:translateY(0);}
+  .run-status{font-size:12px;color:var(--ink-soft);}
+  .run-status.err{color:var(--red);}
+
+  /* Balance strip */
+  .balance-strip{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:14px;
+  }
+  @media (max-width:720px){.balance-strip{grid-template-columns:1fr;}}
+  .balance-cell{
+    padding:20px 22px;background:var(--panel-raised);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+  }
+  .balance-cell::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--line-soft);
+  }
+  .balance-cell.gap-zero::before{background:var(--green);}
+  .balance-cell.gap-pos::before{background:var(--red);}
+  .balance-cell.gap-neg::before{background:var(--amber);}
+  .balance-cell .bl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .balance-cell .bv{font-family:'Fraunces',serif;font-size:27px;font-weight:600;}
+  .balance-cell.gap-zero .bv{color:var(--green);}
+  .balance-cell.gap-pos .bv{color:var(--red);}
+  .balance-cell.gap-neg .bv{color:var(--amber);}
+  .gap-note{font-size:11px;color:var(--ink-soft);margin-top:6px;}
+
+  /* Tabs */
+  .tabbar{
+    display:flex;flex-wrap:wrap;gap:4px;background:var(--line-soft);
+    padding:4px;border-radius:var(--radius);margin-bottom:0;
+  }
+  .tab{
+    padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    color:var(--ink-soft);border-radius:calc(var(--radius) - 4px);
+    display:flex;align-items:center;gap:7px;
+    transition:background .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{color:var(--ink);background:var(--panel-raised);box-shadow:var(--shadow-sm);}
+  .tab .count{
+    background:#fff;color:var(--ink-soft);border-radius:8px;
+    font-size:10.5px;padding:1px 7px;font-weight:700;
+  }
+  .tab.active .count{background:var(--green);color:#fff;}
+  .tab-panel{display:none;padding-top:16px;animation:fadeIn .22s var(--ease);}
+  .tab-panel.active{display:block;}
+  .tab-desc{font-size:12px;color:var(--ink-soft);margin-bottom:14px;max-width:820px;}
+
+  table{width:100%;border-collapse:collapse;background:var(--panel-raised);font-size:12.5px;}
+  thead th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--ink-soft);border-bottom:1.5px solid var(--ink);padding:10px 12px;
+    position:sticky;top:0;background:var(--panel-raised);
+    box-shadow:0 1px 0 var(--ink);
+  }
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  tbody tr:nth-child(even){background:rgba(27,35,31,.014);}
+  tbody tr:hover{background:var(--green-tint);}
+  td.num, th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  td.note{color:var(--ink-soft);font-size:12px;max-width:420px;}
+  .diff-badge{
+    display:inline-block;margin-left:6px;padding:1px 7px;border-radius:7px;
+    background:var(--amber-tint);color:var(--amber);font-size:10px;font-weight:700;
+    white-space:nowrap;
+  }
+  tr.flag td{background:var(--amber-tint);}
+  tr.flag:hover td{background:#efe0bd;}
+  tfoot td{border-top:1.5px solid var(--ink);font-weight:700;padding:9px 12px;}
+  .empty-state{padding:34px 10px;color:var(--ink-soft);font-style:italic;font-size:12.5px;text-align:center;}
+  .table-scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
+
+  .pill{display:inline-block;padding:1px 8px;border-radius:8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;}
+  .pill.expense{background:var(--red-tint);color:var(--red);}
+  .pill.refund{background:var(--green-tint);color:var(--green-dark);}
+  .pill.correct{background:var(--amber-tint);color:var(--amber);}
+  .pill.matched{background:var(--line-soft);color:var(--ink-soft);}
+
+  .download-row{margin-top:22px;display:flex;gap:12px;flex-wrap:wrap;}
+  .dl-btn{
+    background:var(--ink);color:var(--paper);border:none;padding:11px 18px;
+    font-family:inherit;font-weight:600;font-size:12.5px;border-radius:var(--radius-sm);cursor:pointer;
+    box-shadow:var(--shadow-sm);
+    transition:background .15s var(--ease), transform .15s var(--ease), box-shadow .15s var(--ease);
+  }
+  .dl-btn:hover{background:var(--green-dark);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+  .dl-btn.secondary{background:transparent;color:var(--ink);border:1.5px solid var(--ink);box-shadow:none;}
+  .dl-btn.secondary:hover{background:var(--panel-raised);}
+
+  .footnote{margin-top:60px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-soft);}
+  .hidden{display:none !important;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  #results-section:not(.hidden), #tabs-section:not(.hidden){animation:fadeIn .3s var(--ease);}
+  .mark-icon{width:40px;height:40px;flex:none;border-radius:10px;box-shadow:var(--shadow-sm);}
+  .tol-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr)) !important;}
+  .fuel-toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12px;font-weight:600;}
+  .fuel-toggle input{width:15px;height:15px;accent-color:var(--green);}
+  .pill.ok{background:var(--green-tint);color:var(--green-dark);}
+  .pill.warn{background:var(--amber-tint);color:var(--amber);}
+  .pill.bad{background:var(--red-tint);color:var(--red);}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px;}
+  .kpi{background:var(--panel-raised);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow-sm);}
+  .kpi .kl{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+  .kpi .kv{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-top:4px;}
+  .kpi .ks{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .an-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:820px){.an-grid{grid-template-columns:1fr;}}
+  .an-card{background:var(--panel-raised);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);}
+  .an-card h3,.sub-h{font-family:'Fraunces',serif;font-size:15px;margin:0 0 12px;}
+  .sub-h{margin:22px 0 10px;}
+  .bar-row{display:grid;grid-template-columns:120px 1fr auto;gap:10px;align-items:center;margin-bottom:8px;font-size:12px;}
+  .bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bar-track{background:var(--line-soft);border-radius:5px;height:10px;overflow:hidden;}
+  .bar-fill{background:linear-gradient(90deg,var(--green),var(--green-dark));height:100%;border-radius:5px;}
+  .bar-val{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .bar-sub{color:var(--ink-soft);font-size:10.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="wordmark"><svg class="mark-icon" aria-label="QuickBooks and Qashio" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#14201B"/><circle cx="22" cy="25" r="14" fill="#2CA01C"/><circle cx="42" cy="25" r="14" fill="#6C4DFF" stroke="#14201B" stroke-width="2.5"/><circle cx="19" cy="25" r="5" fill="none" stroke="#fff" stroke-width="3"/><path d="M24.2 20v13" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="42" cy="25" r="6" fill="none" stroke="#fff" stroke-width="3"/><path d="M45 28.5l5.5 5.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M14 47H50M45 43l5 4-5 4" fill="none" stroke="#F2B84B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 56H14M19 52l-5 4 5 4" fill="none" stroke="#F2B84B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Qashio <span>⇄</span> QuickBooks</div>
+    <div class="tagline">Line-by-line reconciliation ledger — matches every statement transaction against the general ledger before anything gets flagged.</div>
+  </header>
+
+  <section id="upload-section">
+    <div class="step-title"><span class="step-num">1</span><h2 class="section-title">Upload this month's exports</h2></div>
+    <div class="upload-grid">
+      <div class="dropzone" id="dz-qashio">
+        <div>
+          <div class="dz-top">
+            <div class="dz-icon">▤</div>
+            <div>
+              <div class="dz-label">Qashio statement (.xlsx)</div>
+              <div class="dz-file empty" id="dz-qashio-file">No file yet</div>
+            </div>
+          </div>
+        </div>
+        <button class="dz-btn" id="btn-qashio">Choose file</button>
+        <input type="file" id="file-qashio" accept=".xlsx,.xls">
+      </div>
+      <div class="dropzone" id="dz-qb">
+        <div>
+          <div class="dz-top">
+            <div class="dz-icon">📗</div>
+            <div style="flex:1">
+              <div class="dz-label">QuickBooks ledger export (.xlsx)</div>
+              <div class="dz-file empty" id="dz-qb-file">No file yet</div>
+              <div class="qb-account-picker hidden" id="qb-account-wrap">
+                Account detected: <select id="qb-account-select"></select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="dz-btn" id="btn-qb">Choose file</button>
+        <input type="file" id="file-qb" accept=".xlsx,.xls">
+      </div>
+    </div>
+
+    <details class="adv" id="adv-tolerance">
+      <summary><span class="gear">⚙</span> Matching tolerance (advanced) <span class="chev">▸</span></summary>
+      <div class="adv-body">
+        <div class="adv-desc">Small real-world rounding differences (fees, discount fils) shouldn't fall through as unexplained items. Set how far apart two amounts can be and still count as "the same transaction" — every tolerance match is still shown to you with the exact AED difference, never hidden. Keep these small so genuinely different transactions never get matched by coincidence.</div>
+        <div class="tol-grid">
+          <div class="tol-field">
+            <label for="tol-exact">Same-date match</label>
+            <div class="tol-input-row"><input type="number" id="tol-exact" value="0.05" min="0" max="5" step="0.01"><span class="tol-unit">AED</span></div>
+            <div class="tol-hint">Pass 1 — same day, same direction. Strongest signal, so this can be the most forgiving.</div>
+          </div>
+          <div class="tol-field">
+            <label for="tol-shift">Date-shifted match</label>
+            <div class="tol-input-row"><input type="number" id="tol-shift" value="0.03" min="0" max="5" step="0.01"><span class="tol-unit">AED</span></div>
+            <div class="tol-hint">Pass 2 — posted up to 60 days apart. Date + amount are both fuzzy, so kept tighter to avoid false matches.</div>
+          </div>
+          <div class="tol-field">
+            <label for="tol-group">Consolidation / net-zero</label>
+            <div class="tol-input-row"><input type="number" id="tol-group" value="0.05" min="0" max="5" step="0.01"><span class="tol-unit">AED</span></div>
+            <div class="tol-hint">Pass 3 / 3b — several lines summed against one, or a purchase netted against its refund.</div>
+          </div>
+          <div class="tol-field">
+            <label for="tol-fuel">Monthly fuel allocation</label>
+            <div class="tol-input-row"><input type="number" id="tol-fuel" value="1.00" min="0" max="50" step="0.01"><span class="tol-unit">AED</span></div>
+            <div class="tol-hint">ENOC (incl. EPPCO) / ADNOC / Emarat — a whole month's fuel summed against the single monthly entry in QuickBooks.</div>
+          </div>
+        </div>
+        <label class="fuel-toggle"><input type="checkbox" id="fuel-on" checked> Enable monthly fuel allocation logic (3 suppliers: ENOC incl. EPPCO, ADNOC, Emarat)</label>
+      </div>
+    </details>
+
+    <div class="run-row">
+      <button class="run-btn" id="btn-run" disabled>Run reconciliation</button>
+      <span class="run-status" id="run-status">Upload both files to begin.</span>
+    </div>
+  </section>
+
+  <section id="results-section" class="hidden">
+    <div class="step-title"><span class="step-num">2</span><h2 class="section-title">Balance</h2></div>
+    <div class="balance-strip" id="balance-strip"></div>
+  </section>
+
+  <section id="tabs-section" class="hidden">
+    <div class="step-title"><span class="step-num">3</span><h2 class="section-title">Findings</h2></div>
+    <div class="tabbar" id="tabbar"></div>
+    <div id="tabpanels"></div>
+    <div class="download-row">
+      <button class="dl-btn" id="btn-download">⬇ Download full report (.xlsx)</button>
+      <button class="dl-btn secondary" id="btn-reset">↺ Start a new reconciliation</button>
+    </div>
+  </section>
+
+  <div class="footnote">
+    Matching passes: (1) exact date + amount, (2) same amount posted on a different date within 60 days, (3) split or consolidated postings within a vendor (same total, several lines on one side), (4) net-of-refund postings, with a flag whenever the same discount looks like it was counted on both sides. Each pass applies the tolerance set above and always shows any AED difference on the matched row. Anything left over is listed under Post as Expense / Post as Refund / Remove or Investigate for your review — nothing is posted automatically.
+  </div>
+
+</div>
+
+<script>
+/* ============================== STATE ============================== */
+const state = { qashioWB:null, qbWB:null, qbSheetName:null, qbAccounts:[], qbChosenAccount:null, result:null };
+
+function readTolerance(){
+  const val=(id,def)=>{ const el=document.getElementById(id); const n=el?parseFloat(el.value):NaN; return isNaN(n)||n<0? def : n; };
+  return { exact: val('tol-exact',0.05), shift: val('tol-shift',0.03), group: val('tol-group',0.05), fuel: val('tol-fuel',1.00), fuelOn: !!(document.getElementById('fuel-on')||{checked:true}).checked };
+}
+
+/* ============================== FILE UI ============================== */
+function setupDropzone(dzId, fileId, btnId, labelId, onFile){
+  const dz=document.getElementById(dzId), input=document.getElementById(fileId),
+        btn=document.getElementById(btnId), label=document.getElementById(labelId);
+  btn.addEventListener('click', ()=>input.click());
+  input.addEventListener('change', e=>{ if(e.target.files[0]) handle(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.add('hover');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault(); dz.classList.remove('hover');}));
+  dz.addEventListener('drop', e=>{ if(e.dataTransfer.files[0]) handle(e.dataTransfer.files[0]); });
+  function handle(file){
+    label.textContent=file.name; label.classList.remove('empty');
+    dz.classList.add('filled');
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const wb=XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellDates:true});
+      onFile(wb, file.name);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+setupDropzone('dz-qashio','file-qashio','btn-qashio','dz-qashio-file', (wb)=>{ state.qashioWB=wb; checkReady(); });
+setupDropzone('dz-qb','file-qb','btn-qb','dz-qb-file', (wb)=>{
+  state.qbWB=wb;
+  const accounts = detectQBAccounts(wb);
+  state.qbAccounts = accounts;
+  const wrap=document.getElementById('qb-account-wrap'), sel=document.getElementById('qb-account-select');
+  sel.innerHTML='';
+  accounts.forEach((a,i)=>{
+    const opt=document.createElement('option'); opt.value=i; opt.textContent=a.name; sel.appendChild(opt);
+  });
+  const qashioIdx = accounts.findIndex(a=>/qashio/i.test(a.name));
+  sel.value = qashioIdx>=0?qashioIdx:0;
+  state.qbChosenAccount = accounts[sel.value];
+  wrap.classList.remove('hidden');
+  sel.onchange=()=>{ state.qbChosenAccount = accounts[sel.value]; };
+  checkReady();
+});
+
+function checkReady(){
+  const ready = state.qashioWB && state.qbWB;
+  document.getElementById('btn-run').disabled = !ready;
+  document.getElementById('run-status').textContent = ready ? 'Ready — click Run reconciliation.' : 'Upload both files to begin.';
+}
+
+document.getElementById('btn-run').addEventListener('click', runReconciliation);
+document.getElementById('btn-reset').addEventListener('click', ()=>location.reload());
+
+/* ============================== PARSERS ============================== */
+
+// Convert a cell value (Date object, serial number, or string) to 'YYYY-MM-DD'
+function toISODate(v){
+  if(v==null || v==='') return null;
+  if(v instanceof Date){
+    const y=v.getFullYear(), m=String(v.getMonth()+1).padStart(2,'0'), d=String(v.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  if(typeof v === 'number'){
+    const d0=XLSX.SSF.parse_date_code(v);
+    if(d0) return `${d0.y}-${String(d0.m).padStart(2,'0')}-${String(d0.d).padStart(2,'0')}`;
+  }
+  if(typeof v === 'string'){
+    const m = v.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+    const d=new Date(v);
+    if(!isNaN(d)) return toISODate(d);
+  }
+  return null;
+}
+function num(v){ if(v==null||v==='') return 0; const n=parseFloat(v); return isNaN(n)?0:n; }
+function norm(s){ return (s||'').toString().trim().toLowerCase(); }
+
+// find header row + column map in a 2D array, given required header keywords (each an array of alternatives)
+function findHeader(rows, colsNeeded){
+  for(let r=0;r<Math.min(rows.length,20);r++){
+    const row = rows[r].map(c=>norm(c));
+    const map = {};
+    let allFound = true;
+    for(const key in colsNeeded){
+      const alts = colsNeeded[key];
+      let idx = -1;
+      for(let c=0;c<row.length;c++){
+        if(alts.some(a=>row[c]===a || (row[c] && row[c].includes(a)))){ idx=c; break; }
+      }
+      if(idx===-1){ allFound=false; break; }
+      map[key]=idx;
+    }
+    if(allFound) return {headerRow:r, map};
+  }
+  return null;
+}
+
+function parseQashio(wb){
+  const out=[];
+  wb.SheetNames.forEach(sheetName=>{
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+    if(!rows.length) return;
+    const hdr = findHeader(rows, {
+      date:['date'], merchant:['merchant'], paid:['paid'], received:['received']
+    });
+    if(!hdr) return; // sheet doesn't look like a transaction sheet
+    const voucherHdr = findHeader([rows[hdr.headerRow]], {voucher:['voucher']});
+    const txidHdr = findHeader([rows[hdr.headerRow]], {txid:['transaction id','txid']});
+    const typeHdr = findHeader([rows[hdr.headerRow]], {type:['type']});
+    const balHdr = findHeader([rows[hdr.headerRow]], {balance:['balance']});
+    const userHdr = findHeader([rows[hdr.headerRow]], {user:['user']});
+    for(let r=hdr.headerRow+1;r<rows.length;r++){
+      const row=rows[r];
+      if(!row || row.every(c=>c==null||c==='')) continue;
+      const date = toISODate(row[hdr.map.date]);
+      if(!date) continue;
+      const merchant = row[hdr.map.merchant];
+      const paid = num(row[hdr.map.paid]);
+      const received = num(row[hdr.map.received]);
+      if(paid===0 && received===0 && !merchant) continue;
+      out.push({
+        date, sheet:sheetName,
+        voucher: voucherHdr? row[voucherHdr.map.voucher]:null,
+        txid: txidHdr? row[txidHdr.map.txid]:null,
+        type: typeHdr? row[typeHdr.map.type]:null,
+        merchant: merchant||'',
+        user: userHdr? row[userHdr.map.user]:null,
+        paid, received,
+        balance: balHdr? num(row[balHdr.map.balance]):null
+      });
+    }
+  });
+  return out;
+}
+
+function detectQBAccounts(wb){
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const hdr = findHeader(rows, {type:['type'], date:['date'], debit:['debit'], credit:['credit']});
+  if(!hdr) return [{name:'(whole sheet — no account headers detected)', headerRow:0}];
+  const accounts=[];
+  let current=null;
+  for(let r=hdr.headerRow+1;r<rows.length;r++){
+    const row=rows[r];
+    const typeVal = row[hdr.map.type];
+    if(typeVal==null || typeVal===''){
+      const label = row.find(c=>typeof c==='string' && c.trim()!=='');
+      if(label){
+        if(/^total\b/i.test(label.trim())){ /* section end, ignore */ }
+        else { current=label.trim(); if(!accounts.some(a=>a.name===current)) accounts.push({name:current}); }
+      }
+    }
+  }
+  return accounts.length? accounts : [{name:'(whole sheet)'}];
+}
+
+function parseQB(wb, accountName){
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const hdr = findHeader(rows, {type:['type'], date:['date'], name:['name'], memo:['memo'], debit:['debit'], credit:['credit']});
+  const numHdr = findHeader([rows[hdr.headerRow]], {num:['num']});
+  const out=[];
+  let current=null, active=false;
+  for(let r=hdr.headerRow+1;r<rows.length;r++){
+    const row=rows[r];
+    if(!row) continue;
+    const typeVal = row[hdr.map.type];
+    if(typeVal==null || typeVal===''){
+      const label = row.find(c=>typeof c==='string' && c.trim()!=='');
+      if(label){
+        const lab = label.trim();
+        if(/^total\b/i.test(lab)){ if(current===accountName) active=false; }
+        else { current=lab; active = (current===accountName); }
+      }
+      continue;
+    }
+    if(!active) continue;
+    const date = toISODate(row[hdr.map.date]);
+    if(!date) continue;
+    out.push({
+      date,
+      type: typeVal,
+      num: numHdr? row[numHdr.map.num]:null,
+      name: row[hdr.map.name],
+      memo: row[hdr.map.memo],
+      debit: num(row[hdr.map.debit]),
+      credit: num(row[hdr.map.credit])
+    });
+  }
+  return out;
+}
+
+/* ============================== MATCHING ENGINE ============================== */
+
+function buildMovements(stmt, qb){
+  const S=[], Q=[];
+  stmt.forEach((r,i)=>{
+    if(r.paid>0) S.push({side:'S', i, date:r.date, amt:Math.round(r.paid*100)/100, dir:'OUT', merchant:r.merchant, user:r.user, txid:r.txid, sheet:r.sheet, type:r.type, matched:false});
+    if(r.received>0) S.push({side:'S', i, date:r.date, amt:Math.round(r.received*100)/100, dir:'IN', merchant:r.merchant, user:r.user, txid:r.txid, sheet:r.sheet, type:r.type, matched:false});
+  });
+  qb.forEach((r,i)=>{
+    if(r.credit>0) Q.push({side:'Q', i, date:r.date, amt:Math.round(r.credit*100)/100, dir:'OUT', name:r.name, memo:r.memo, num:r.num, type:r.type, matched:false});
+    if(r.debit>0) Q.push({side:'Q', i, date:r.date, amt:Math.round(r.debit*100)/100, dir:'IN', name:r.name, memo:r.memo, num:r.num, type:r.type, matched:false});
+  });
+  return {S,Q};
+}
+
+function daysBetween(a,b){ return Math.abs((new Date(a)-new Date(b))/86400000); }
+
+// round to cents, and produce a "Δ 0.08 AED" style suffix when a match wasn't a perfect
+// amount match — tolerance is applied everywhere but never hidden from the reviewer.
+function roundc(n){ return Math.round(n*100)/100; }
+function diffBadgeText(diff){
+  const d = roundc(Math.abs(diff));
+  return d>0.004 ? `Δ ${d.toFixed(2)} AED` : null;
+}
+
+function passExact(S,Q,tol){
+  const pairs=[];
+  const buckets={};
+  Q.forEach(q=>{ const k=q.date+'|'+q.dir; (buckets[k]=buckets[k]||[]).push(q); });
+  S.forEach(s=>{
+    const k=s.date+'|'+s.dir;
+    const arr=buckets[k];
+    if(!arr) return;
+    let best=null, bestDiff=Infinity;
+    arr.forEach(q=>{
+      if(q.matched) return;
+      const diff=roundc(Math.abs(q.amt-s.amt));
+      if(diff<=tol && diff<bestDiff){ best=q; bestDiff=diff; }
+    });
+    if(best){
+      s.matched=true; best.matched=true;
+      const badge=diffBadgeText(bestDiff);
+      pairs.push({s,q:best,
+        note: badge? `exact date, amount matched within tolerance` : 'exact date + amount',
+        diffBadge: badge});
+    }
+  });
+  return pairs;
+}
+
+function passDateShift(S,Q,windowDays,tol){
+  const remS=S.filter(x=>!x.matched), remQ=Q.filter(x=>!x.matched);
+  const candidates=[];
+  remS.forEach((s,i)=>remQ.forEach((q,j)=>{
+    if(s.dir===q.dir){
+      const diff=roundc(Math.abs(s.amt-q.amt));
+      if(diff<=tol){
+        const gap=daysBetween(s.date,q.date);
+        if(gap<=windowDays) candidates.push({gap,diff,s,q});
+      }
+    }
+  }));
+  // exact-amount matches first, then smallest date gap, then smallest amount diff —
+  // so a perfect-amount match on a nearby date always wins over a fuzzy-amount one.
+  candidates.sort((a,b)=> (a.diff>0.004)-(b.diff>0.004) || a.gap-b.gap || a.diff-b.diff);
+  const pairs=[];
+  candidates.forEach(c=>{
+    if(!c.s.matched && !c.q.matched){
+      c.s.matched=true; c.q.matched=true;
+      const badge=diffBadgeText(c.diff);
+      pairs.push({s:c.s,q:c.q,
+        note:`same amount, posted ${Math.round(c.gap)} day(s) later/earlier`,
+        diffBadge: badge});
+    }
+  });
+  return pairs;
+}
+
+function vendorKey(name){
+  return norm(name).replace(/[^a-z0-9]/g,'').slice(0,6);
+}
+
+// find subsets of arr (indices) whose sum ~= target, up to maxSize items
+function findSubsetSum(arr, target, maxSize, tol){
+  const n=arr.length;
+  let best=null, bestDiff=Infinity;
+  function combos(start, chosen){
+    if(chosen.length>0){
+      const sum = chosen.reduce((a,i)=>a+arr[i].amt,0);
+      const diff = roundc(Math.abs(sum-target));
+      if(diff<=tol && diff<bestDiff){ best=[...chosen]; bestDiff=diff;
+        if(diff<0.001) return true; // perfect match, stop searching
+      }
+    }
+    if(chosen.length>=maxSize) return false;
+    for(let i=start;i<n;i++){
+      if(combos(i+1,[...chosen,i])) return true;
+    }
+    return false;
+  }
+  combos(0,[]);
+  return best? {idxs:best, diff:bestDiff} : null;
+}
+
+// Pass 3: within same vendor & direction, match "several lines on one side = one/few lines on the other"
+function passConsolidation(S,Q,windowDays,tol){
+  const groups={};
+  S.filter(x=>!x.matched).forEach(s=>{
+    const k=vendorKey(s.merchant)+'|'+s.dir; (groups[k]=groups[k]||{S:[],Q:[]}).S.push(s);
+  });
+  Q.filter(x=>!x.matched).forEach(q=>{
+    const k=vendorKey(q.name)+'|'+q.dir; (groups[k]=groups[k]||{S:[],Q:[]}).Q.push(q);
+  });
+  const results=[];
+  Object.values(groups).forEach(g=>{
+    if(!g.S.length || !g.Q.length) return;
+    // try: one Q item = subset of S items (split purchase consolidated in QB, or vice versa)
+    g.Q.slice().forEach(q=>{
+      if(q.matched) return;
+      const pool = g.S.filter(s=>!s.matched && daysBetween(s.date,q.date)<=windowDays);
+      if(pool.length<2) return;
+      const found = findSubsetSum(pool, q.amt, 5, tol);
+      if(found){
+        const items = found.idxs.map(i=>pool[i]);
+        const badge = diffBadgeText(found.diff);
+        items.forEach(s=>s.matched=true); q.matched=true;
+        results.push({type:'consolidated', s:items, q:[q], diffBadge:badge,
+          note:`${items.length} statement lines (${items.map(x=>x.amt.toFixed(2)).join('+')} = ${q.amt.toFixed(2)}) consolidated into one QuickBooks entry`});
+      }
+    });
+    g.S.slice().forEach(s=>{
+      if(s.matched) return;
+      const pool = g.Q.filter(q=>!q.matched && daysBetween(s.date,q.date)<=windowDays);
+      if(pool.length<2) return;
+      const found = findSubsetSum(pool, s.amt, 5, tol);
+      if(found){
+        const items = found.idxs.map(i=>pool[i]);
+        const badge = diffBadgeText(found.diff);
+        items.forEach(q=>q.matched=true); s.matched=true;
+        results.push({type:'consolidated', s:[s], q:items, diffBadge:badge,
+          note:`one statement line split into ${items.length} QuickBooks entries (${items.map(x=>x.amt.toFixed(2)).join('+')} = ${s.amt.toFixed(2)})`});
+      }
+    });
+  });
+  return results;
+}
+
+// Pass 3.5: same-vendor purchase(s) + refund(s) that net to zero on the statement alone,
+// with nothing recorded in QuickBooks on either side (e.g. bought then fully returned a few days later).
+function passZeroNet(S, windowDays, tol){
+  const results=[];
+  const groups={};
+  S.filter(x=>!x.matched).forEach(s=>{
+    const k=vendorKey(s.merchant); (groups[k]=groups[k]||[]).push(s);
+  });
+  Object.values(groups).forEach(items=>{
+    let progress=true;
+    while(progress){
+      progress=false;
+      const outs = items.filter(x=>!x.matched && x.dir==='OUT');
+      const ins = items.filter(x=>!x.matched && x.dir==='IN');
+      if(outs.length===0 || ins.length===0) break;
+      const cap=10;
+      const outPool=outs.slice(0,cap), inPool=ins.slice(0,cap);
+      let best=null; // {outIdx:[], inIdx:[], size, spread}
+      const outSubsets=[];
+      for(let mask=1; mask<(1<<outPool.length); mask++){
+        let sum=0, idxs=[], minD=null, maxD=null;
+        for(let i=0;i<outPool.length;i++) if(mask & (1<<i)){
+          sum+=outPool[i].amt; idxs.push(i);
+          if(minD===null||outPool[i].date<minD) minD=outPool[i].date;
+          if(maxD===null||outPool[i].date>maxD) maxD=outPool[i].date;
+        }
+        outSubsets.push({sum:Math.round(sum*100)/100, idxs, minD, maxD});
+      }
+      for(let mask=1; mask<(1<<inPool.length); mask++){
+        let sum=0, idxs=[], minD=null, maxD=null;
+        for(let i=0;i<inPool.length;i++) if(mask & (1<<i)){
+          sum+=inPool[i].amt; idxs.push(i);
+          if(minD===null||inPool[i].date<minD) minD=inPool[i].date;
+          if(maxD===null||inPool[i].date>maxD) maxD=inPool[i].date;
+        }
+        const inSum=Math.round(sum*100)/100;
+        outSubsets.forEach(o=>{
+          const diff=roundc(Math.abs(o.sum-inSum));
+          if(diff<=tol){
+            const allDates=[o.minD,o.maxD,minD,maxD].sort();
+            const spread=daysBetween(allDates[0],allDates[allDates.length-1]);
+            if(spread<=windowDays){
+              const size=o.idxs.length+idxs.length;
+              // Prefer the pairing with the SHORTEST date spread first (a refund almost
+              // always follows the nearest preceding purchase, not a distant one with the
+              // same coincidental amount), then the smallest number of items as a tiebreak.
+              if(!best || spread<best.spread || (spread===best.spread && size<best.size)){
+                best={outIdx:o.idxs, inIdx:idxs, size, spread, diff};
+              }
+            }
+          }
+        });
+      }
+      if(best){
+        const outItems=best.outIdx.map(i=>outPool[i]);
+        const inItems=best.inIdx.map(i=>inPool[i]);
+        outItems.forEach(x=>x.matched=true);
+        inItems.forEach(x=>x.matched=true);
+        const badge=diffBadgeText(best.diff);
+        results.push({type:'zero-net', s:[...outItems,...inItems], q:[], diffBadge:badge,
+          note:`Purchased (${outItems.map(x=>x.amt.toFixed(2)).join('+')}) then fully refunded (${inItems.map(x=>x.amt.toFixed(2)).join('+')}) — nets to zero, never recorded in QuickBooks either side, no posting needed.`});
+        progress=true;
+      }
+    }
+  });
+  return results;
+}
+
+// Pass 4: net-of-refund detection + double-count flag
+// For a remaining S OUT with a same-vendor Q OUT of a smaller amount nearby in date,
+// check whether the difference matches a remaining S IN (refund) -> net-posted, no action
+// or matches an ALREADY-recorded Q IN of the same amount -> flag as possible double count.
+function passNetOfRefund(S,Q,allQMovements,windowDays,tol){
+  const results=[];
+  const remS_out = S.filter(x=>!x.matched && x.dir==='OUT');
+  const remQ_out = Q.filter(x=>!x.matched && x.dir==='OUT');
+  remS_out.forEach(s=>{
+    if(s.matched) return;
+    const candidates = remQ_out.filter(q=>!q.matched && vendorKey(q.name)===vendorKey(s.merchant) && q.amt<s.amt && daysBetween(s.date,q.date)<=windowDays);
+    if(!candidates.length) return;
+    candidates.sort((a,b)=>daysBetween(s.date,a.date)-daysBetween(s.date,b.date));
+    const q = candidates[0];
+    const diff = Math.round((s.amt-q.amt)*100)/100;
+    // is there a remaining statement refund (IN) of ~diff, same vendor, after purchase date?
+    const refundIdx = S.findIndex(x=>!x.matched && x.dir==='IN' && vendorKey(x.merchant)===vendorKey(s.merchant) && roundc(Math.abs(x.amt-diff))<=tol && x.date>=s.date);
+    // is there an ALREADY-matched QB IN entry of ~diff amount (i.e. separately recorded refund)?
+    const alreadyRecordedRefund = allQMovements.find(x=>x.matched && x.dir==='IN' && roundc(Math.abs(x.amt-diff))<=tol && vendorKey(x.name)===vendorKey(s.merchant));
+    if(alreadyRecordedRefund){
+      s.matched=true; q.matched=true;
+      results.push({type:'correct', s:[s], q:[q], diff, flag:true,
+        note:`Short by exactly ${diff.toFixed(2)}, matching a refund (${alreadyRecordedRefund.date}) already posted separately in QuickBooks. Looks like the same discount was counted twice — verify the invoice before correcting.`});
+    } else if(refundIdx>=0){
+      const refund = S[refundIdx]; refund.matched=true;
+      s.matched=true; q.matched=true;
+      results.push({type:'matched-net', s:[s,refund], q:[q], diff,
+        note:`QuickBooks recorded the net amount (gross ${s.amt.toFixed(2)} − refund ${refund.amt.toFixed(2)} = ${q.amt.toFixed(2)}). Balance-correct as is; optional cleanup only.`});
+    }
+  });
+  return results;
+}
+
+
+/* ============================== FUEL MONTHLY ALLOCATION ============================== */
+// ENOC / ADNOC / Emarat / EPPCO are card-paid all month long but are usually booked in
+// QuickBooks as ONE allocation for the whole month. This pass sums each month's fuel
+// statement lines and matches them against that lump (per station, or all stations combined).
+function fuelStation(text){
+  const t=(text||'').toString();
+  if(/enoc|eppco|emirates\s*petroleum/i.test(t)) return 'ENOC'; // EPPCO is the same supplier as ENOC
+  if(/adnoc/i.test(t)) return 'ADNOC';
+  if(/emarat/i.test(t)) return 'Emarat';
+  if(/petrol|fuel|diesel|gasoline/i.test(t)) return 'Other fuel';
+  return null;
+}
+function addDaysISO(iso,n){ const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function monthEndISO(m){ const [y,mo]=m.split('-').map(Number); return `${m}-${String(new Date(Date.UTC(y,mo,0)).getUTCDate()).padStart(2,'0')}`; }
+function signedNet(a){ return roundc(a.reduce((t,x)=>t+(x.dir==='OUT'?x.amt:-x.amt),0)); }
+
+function passFuelAllocation(S,Q,tol,enabled){
+  S.forEach(s=>{ s.station=fuelStation(s.merchant); });
+  Q.forEach(q=>{ q.station=fuelStation((q.name||'')+' '+(q.memo||'')); });
+  const fuelS=S.filter(s=>s.station);
+  const months=[...new Set(fuelS.map(s=>s.date.slice(0,7)))].sort();
+  const results=[], stationRows=[], monthRows=[];
+  months.forEach(m=>{
+    const inMonth=fuelS.filter(s=>s.date.slice(0,7)===m);
+    const wStart=addDaysISO(m+'-01',-5), wEnd=addDaysISO(monthEndISO(m),10); // lump may be booked a few days either side
+    const qPool=(pred)=>Q.filter(q=>!q.matched && q.station && q.dir==='OUT' && q.date>=wStart && q.date<=wEnd && pred(q)).sort((a,b)=>a.date<b.date?-1:1).slice(0,20);
+    const preMatched=inMonth.filter(s=>s.matched);
+    const allocHere=[];
+    const apply=(sItems,found,pool,scope)=>{
+      const qs=found.idxs.map(i=>pool[i]);
+      qs.forEach(q=>q.matched=true); sItems.forEach(s=>s.matched=true);
+      const res={type:'fuel-allocation', month:m, scope, s:sItems, q:qs, diffBadge:diffBadgeText(found.diff),
+        note:`Monthly fuel allocation ${m}: ${sItems.length} statement fuel line(s) = ${signedNet(sItems).toFixed(2)} AED, booked in QuickBooks as ${qs.length} entr${qs.length>1?'ies':'y'} (${scope==='combined'?'all stations combined':scope})`};
+      results.push(res); allocHere.push(res);
+    };
+    if(enabled){
+      [...new Set(inMonth.map(s=>s.station))].filter(st=>st!=='Other fuel').forEach(st=>{
+        const items=inMonth.filter(s=>s.station===st && !s.matched);
+        const target=signedNet(items); if(!items.length||target<=0) return;
+        const pool=qPool(q=>q.station===st); if(!pool.length) return;
+        const f=findSubsetSum(pool,target,6,tol); if(f) apply(items,f,pool,st);
+      });
+      const items=inMonth.filter(s=>!s.matched), target=signedNet(items);
+      if(items.length && target>0){
+        const pool=qPool(()=>true);
+        if(pool.length){ const f=findSubsetSum(pool,target,6,tol); if(f) apply(items,f,pool,'combined'); }
+      }
+    }
+    // ---- analytics rows ----
+    const remaining=inMonth.filter(s=>!s.matched);
+    const monthQbOpen=roundc(qPool(()=>true).reduce((a,q)=>a+q.amt,0));
+    const stationStatus=(st,items)=>{
+      const own=allocHere.find(r=>r.scope===st && r.s.some(x=>x.station===st));
+      if(own) return {status:'Allocated', qb:roundc(own.q.reduce((a,x)=>a+x.amt,0))};
+      const lump=allocHere.find(r=>r.scope==='combined' && r.s.some(x=>x.station===st));
+      if(lump) return {status:'Allocated (lump)', qb:null};
+      if(items.every(x=>x.matched)) return {status:'Posted individually', qb:null};
+      return {status: monthQbOpen>0?'Mismatch':'Not allocated', qb:null};
+    };
+    [...new Set(inMonth.map(s=>s.station))].forEach(st=>{
+      const items=inMonth.filter(s=>s.station===st);
+      const spend=roundc(items.filter(x=>x.dir==='OUT').reduce((a,x)=>a+x.amt,0));
+      const refunds=roundc(items.filter(x=>x.dir==='IN').reduce((a,x)=>a+x.amt,0));
+      const ss=stationStatus(st,items);
+      stationRows.push({month:m, station:st, count:items.length, spend, refunds, net:roundc(spend-refunds), status:ss.status, qb:ss.qb});
+    });
+    const net=signedNet(inMonth);
+    const allocQb=roundc(allocHere.reduce((a,r)=>a+r.q.reduce((t,x)=>t+x.amt,0),0));
+    const allocNet=roundc(allocHere.reduce((a,r)=>a+signedNet(r.s),0));
+    const preNet=signedNet(preMatched);
+    let status, qbTotal, note='';
+    if(!remaining.length){ status = allocHere.length? 'Allocated' : 'Posted individually'; qbTotal=roundc(allocQb+preNet); }
+    else if(monthQbOpen>0){ status=allocHere.length?'Partial':'Mismatch'; qbTotal=roundc(allocQb+preNet+monthQbOpen);
+      note=`QuickBooks has ${monthQbOpen.toFixed(2)} AED of unmatched fuel entries around this month vs ${signedNet(remaining).toFixed(2)} AED still unallocated on the statement.`; }
+    else { status=allocHere.length?'Partial':'Not allocated'; qbTotal=roundc(allocQb+preNet);
+      note=`No fuel entry found in QuickBooks. Post one allocation of ${signedNet(remaining).toFixed(2)} AED${enabled?'':' (fuel logic is switched off)'}.`; }
+    monthRows.push({month:m, count:inMonth.length, net, qb:qbTotal, diff:roundc(qbTotal-net), status, note});
+  });
+  return {results, stationRows, monthRows};
+}
+
+/* ============================== ANALYTICS ============================== */
+function computeAnalytics(r){
+  const S=r.S, outs=S.filter(x=>x.dir==='OUT'), ins=S.filter(x=>x.dir==='IN');
+  const sum=a=>roundc(a.reduce((t,x)=>t+x.amt,0));
+  const matchedCnt=S.filter(x=>x.matched).length;
+  const grp=(arr,keyFn)=>{ const m={}; arr.forEach(x=>{ const k=keyFn(x)||'(unknown)'; (m[k]=m[k]||{key:k,amt:0,n:0}); m[k].amt+=x.amt; m[k].n++; }); return Object.values(m).map(v=>({...v,amt:roundc(v.amt)})).sort((a,b)=>b.amt-a.amt); };
+  const fuelOut=outs.filter(x=>x.station);
+  return {
+    txns:S.length, spend:sum(outs), refunds:sum(ins), net:roundc(sum(outs)-sum(ins)),
+    matchRate:S.length? matchedCnt/S.length*100 : 0, matchedCnt,
+    avgTxn: outs.length? sum(outs)/outs.length : 0,
+    byMonth:grp(outs,x=>x.date.slice(0,7)).sort((a,b)=>a.key<b.key?-1:1),
+    byMerchant:grp(outs,x=>(x.merchant||'').toString().trim().toUpperCase()).slice(0,10),
+    byUser:grp(outs,x=>x.user).slice(0,10),
+    fuelSpend:sum(fuelOut), fuelShare: outs.length? sum(fuelOut)/sum(outs)*100 : 0,
+    fuelByStation:grp(fuelOut,x=>x.station),
+    actionValue: roundc(r.cls.postExpense.reduce((a,x)=>a+x.amt,0)+r.cls.postRefund.reduce((a,x)=>a+x.amt,0)+r.cls.removeInvestigate.reduce((a,x)=>a+x.amt,0)),
+    actionCount: r.cls.postExpense.length+r.cls.postRefund.length+r.cls.correct.length+r.cls.removeInvestigate.length
+  };
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function barList(rows,total){
+  if(!rows.length) return '<div class="empty-state">No data.</div>';
+  const max=Math.max(...rows.map(x=>x.amt),1);
+  return rows.map(x=>`<div class="bar-row"><div class="bar-label" title="${esc(x.key)}">${esc(x.key)}</div><div class="bar-track"><div class="bar-fill" style="width:${(x.amt/max*100).toFixed(1)}%"></div></div><div class="bar-val">${fmt(x.amt)} <span class="bar-sub">${x.n} txn${total?` · ${(x.amt/total*100).toFixed(1)}%`:''}</span></div></div>`).join('');
+}
+function statusPill(s){
+  const cls = /^Allocated|Posted/.test(s)?'ok':(s==='Partial'||s==='Mismatch'?'warn':'bad');
+  return `<span class="pill ${cls}">${esc(s)}</span>`;
+}
+function renderAnalytics(r){
+  const a=r.analytics;
+  const kpi=(l,v,sub)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv">${v}</div>${sub?`<div class="ks">${sub}</div>`:''}</div>`;
+  return `<div class="tab-desc">Spend and reconciliation health for the statement you uploaded. Percentages are of card spend (Paid) unless stated.</div>
+  <div class="kpi-grid">
+    ${kpi('Statement transactions',a.txns,'purchases + refunds')}
+    ${kpi('Total spend','AED '+fmt(a.spend),'avg AED '+fmt(a.avgTxn)+' / purchase')}
+    ${kpi('Refunds received','AED '+fmt(a.refunds),'net spend AED '+fmt(a.net))}
+    ${kpi('Matched automatically',a.matchRate.toFixed(1)+'%',a.matchedCnt+' of '+a.txns+' lines')}
+    ${kpi('Needs your action',a.actionCount,'AED '+fmt(a.actionValue)+' affected')}
+    ${kpi('Fuel share',a.fuelShare.toFixed(1)+'%','AED '+fmt(a.fuelSpend)+' at ENOC (incl. EPPCO) / ADNOC / Emarat')}
+  </div>
+  <div class="an-grid">
+    <div class="an-card"><h3>Spend by month</h3>${barList(a.byMonth,a.spend)}</div>
+    <div class="an-card"><h3>Top merchants</h3>${barList(a.byMerchant,a.spend)}</div>
+    <div class="an-card"><h3>Spend by cardholder</h3>${barList(a.byUser,a.spend)}</div>
+    <div class="an-card"><h3>Fuel by station</h3>${barList(a.fuelByStation,a.fuelSpend)}</div>
+  </div>`;
+}
+function renderFuel(r){
+  const f=r.fuel, a=r.analytics;
+  if(!f.monthRows.length) return `<div class="tab-desc">Looks for ENOC, ADNOC, Emarat, EPPCO (and generic petrol/fuel) lines.</div><div class="empty-state">No fuel transactions found on this statement.</div>`;
+  const okM=f.monthRows.filter(m=>/^Allocated|Posted/.test(m.status)).length;
+  const bad=f.monthRows.filter(m=>!/^Allocated|Posted/.test(m.status));
+  const kpi=(l,v,s)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv">${v}</div>${s?`<div class="ks">${s}</div>`:''}</div>`;
+  const top=a.fuelByStation[0];
+  const mBody=f.monthRows.map(m=>`<tr class="${/^Allocated|Posted/.test(m.status)?'':'flag'}"><td>${m.month}</td><td class="num">${m.count}</td><td class="num">${fmt(m.net)}</td><td class="num">${fmt(m.qb)}</td><td class="num">${fmt(m.diff)}</td><td>${statusPill(m.status)}</td><td class="note">${esc(m.note)}</td></tr>`).join('');
+  const sBody=f.stationRows.map(x=>`<tr><td>${x.month}</td><td>${esc(x.station)}</td><td class="num">${x.count}</td><td class="num">${fmt(x.spend)}</td><td class="num">${fmt(x.refunds)}</td><td class="num">${fmt(x.net)}</td><td>${statusPill(x.status)}</td><td class="num">${x.qb==null?'—':fmt(x.qb)}</td></tr>`).join('');
+  return `<div class="tab-desc">Fuel is paid on the card all month but booked in QuickBooks as one monthly allocation. Each month's fuel lines (net of refunds) are totalled and matched against that allocation — per station first, then all stations combined — within ±${r.tol.fuel.toFixed(2)} AED. QuickBooks entries dated up to 10 days after month-end count toward the month.</div>
+  <div class="kpi-grid">
+    ${kpi('Fuel spend','AED '+fmt(a.fuelSpend),a.fuelShare.toFixed(1)+'% of card spend')}
+    ${kpi('Months reconciled',okM+' / '+f.monthRows.length,'allocated or posted line-by-line')}
+    ${kpi('Months needing action',bad.length,bad.length?bad.map(x=>x.month).join(', '):'all fuel accounted for')}
+    ${kpi('Biggest station',top?esc(top.key):'—',top?'AED '+fmt(top.amt):'')}
+  </div>
+  <h3 class="sub-h">By month</h3>
+  <div class="table-scroll"><table><thead><tr><th>Month</th><th class="num">Fuel txns</th><th class="num">Statement net</th><th class="num">QuickBooks</th><th class="num">Diff</th><th>Status</th><th>Note</th></tr></thead><tbody>${mBody}</tbody></table></div>
+  <h3 class="sub-h">By station</h3>
+  <div class="table-scroll"><table><thead><tr><th>Month</th><th>Station</th><th class="num">Txns</th><th class="num">Spend</th><th class="num">Refunds</th><th class="num">Net</th><th>Status</th><th class="num">QB allocation</th></tr></thead><tbody>${sBody}</tbody></table></div>`;
+}
+
+function classify(S,Q, exact, dateShift, consolidated, zeroNet, netOfRefund, fuelAlloc){
+  fuelAlloc = fuelAlloc||[];
+  const postExpense=[], postRefund=[], correct=[], removeInvestigate=[], matched=[];
+  // Perfect matches don't need a row in "Already Matched" — but any match that only
+  // tied out because of the tolerance setting IS surfaced here, badge and all, so
+  // nothing gets matched silently.
+  exact.filter(r=>r.diffBadge).forEach(r=>matched.push({s:[r.s], q:[r.q], note:r.note, diffBadge:r.diffBadge}));
+  dateShift.filter(r=>r.diffBadge).forEach(r=>matched.push({s:[r.s], q:[r.q], note:r.note, diffBadge:r.diffBadge}));
+  fuelAlloc.forEach(r=>matched.push(r));
+  consolidated.forEach(r=>matched.push(r));
+  zeroNet.forEach(r=>matched.push(r));
+  netOfRefund.forEach(r=>{
+    if(r.type==='correct') correct.push(r); else matched.push(r);
+  });
+  S.filter(x=>!x.matched).forEach(s=>{
+    if(s.dir==='OUT') postExpense.push(s); else postRefund.push(s);
+  });
+  Q.filter(x=>!x.matched).forEach(q=>{
+    removeInvestigate.push(q);
+  });
+  return {postExpense, postRefund, correct, removeInvestigate, matched};
+}
+
+/* ============================== RUN ============================== */
+function runReconciliation(){
+  const statusEl=document.getElementById('run-status');
+  statusEl.classList.remove('err');
+  statusEl.textContent='Parsing files…';
+  setTimeout(()=>{
+    try{
+      const stmt = parseQashio(state.qashioWB);
+      if(!stmt.length) throw new Error('Could not find Date/Merchant/Paid/Received columns in the Qashio file.');
+      const accName = state.qbChosenAccount ? state.qbChosenAccount.name : null;
+      const qb = parseQB(state.qbWB, accName);
+      if(!qb.length) throw new Error('Could not find transactions for that account in the QuickBooks file.');
+
+      const tol = readTolerance();
+
+      const {S,Q} = buildMovements(stmt, qb);
+      const allQ = Q; // keep reference before filtering, for "already recorded refund" lookups
+      const p1 = passExact(S,Q,tol.exact);
+      const p2 = passDateShift(S,Q,60,tol.shift);
+      const fuel = passFuelAllocation(S,Q,tol.fuel,tol.fuelOn);
+      const p3 = passConsolidation(S,Q,60,tol.group);
+      const p3b = passZeroNet(S,45,tol.group);
+      const p4 = passNetOfRefund(S,Q,allQ,60,tol.exact);
+      const cls = classify(S,Q,p1,p2,p3,p3b,p4,fuel.results);
+
+      const stmtTotal = stmt.length ? stmt[stmt.length-1].balance : null;
+      const openingGuess = stmtTotal!=null ? (stmtTotal - stmt.reduce((a,r)=>a+r.received-r.paid,0)) : null;
+      const qbTotal = (openingGuess||0) + qb.reduce((a,r)=>a+r.debit-r.credit,0);
+
+      const toleranceMatches = p1.filter(x=>x.diffBadge).length + p2.filter(x=>x.diffBadge).length;
+      state.result = {stmt, qb, S, Q, p1, p2, cls, fuel, stmtTotal, qbTotal, opening:openingGuess, tol, toleranceMatches};
+      state.result.analytics = computeAnalytics(state.result);
+      renderResults();
+      statusEl.textContent = `Matched ${p1.length} exact, ${p2.length} date-shifted, ${p3.length+p3b.length} consolidated/net-zero group(s), ${fuel.results.length} monthly fuel allocation(s)`
+        + (toleranceMatches? `, ${toleranceMatches} within tolerance (see Already Matched)` : '')
+        + `. ${cls.postExpense.length+cls.postRefund.length+cls.correct.length+cls.removeInvestigate.length} item(s) need your review below.`;
+    }catch(err){
+      statusEl.classList.add('err');
+      statusEl.textContent = 'Error: '+err.message;
+      console.error(err);
+    }
+  }, 30);
+}
+
+/* ============================== RENDER ============================== */
+function fmt(n){ return (n<0?'−':'')+Math.abs(n).toLocaleString('en-AE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function renderResults(){
+  const r = state.result;
+  document.getElementById('results-section').classList.remove('hidden');
+  document.getElementById('tabs-section').classList.remove('hidden');
+
+  const gap = Math.round(((r.stmtTotal||0)-(r.qbTotal||0))*100)/100;
+  const gapClass = Math.abs(gap)<0.02 ? 'gap-zero' : (gap>0?'gap-pos':'gap-neg');
+  document.getElementById('balance-strip').innerHTML = `
+    <div class="balance-cell"><div class="bl">Qashio statement</div><div class="bv">AED ${fmt(r.stmtTotal||0)}</div></div>
+    <div class="balance-cell"><div class="bl">QuickBooks</div><div class="bv">AED ${fmt(r.qbTotal||0)}</div></div>
+    <div class="balance-cell ${gapClass}"><div class="bl">Gap</div><div class="bv">AED ${fmt(gap)}</div>
+      <div class="gap-note">${Math.abs(gap)<0.02?'Ties out exactly.':(gap>0?'QuickBooks is lower — money missing from the ledger.':'QuickBooks is higher — check for duplicates or over-postings.')}</div>
+    </div>`;
+
+  const tabs = [
+    {id:'expense', label:'Post as Expense', count:r.cls.postExpense.length, render:renderExpense},
+    {id:'refund', label:'Post as Refund', count:r.cls.postRefund.length, render:renderRefund},
+    {id:'correct', label:'Correct Existing', count:r.cls.correct.length, render:renderCorrect},
+    {id:'investigate', label:'Remove / Investigate', count:r.cls.removeInvestigate.length, render:renderInvestigate},
+    {id:'matched', label:'Already Matched', count:r.cls.matched.length, render:renderMatched},
+    {id:'fuel', label:'⛽ Fuel Allocation', count:r.fuel.monthRows.length, render:renderFuel},
+    {id:'analytics', label:'📊 Analytics', count:null, render:renderAnalytics},
+  ];
+  document.getElementById('tabbar').innerHTML = tabs.map((t,i)=>
+    `<div class="tab ${i===0?'active':''}" data-tab="${t.id}">${t.label}${t.count!=null?` <span class="count">${t.count}</span>`:''}</div>`).join('');
+  document.getElementById('tabpanels').innerHTML = tabs.map((t,i)=>
+    `<div class="tab-panel ${i===0?'active':''}" id="panel-${t.id}"></div>`).join('');
+  tabs.forEach(t=>{ document.getElementById(`panel-${t.id}`).innerHTML = t.render(r); });
+
+  document.querySelectorAll('.tab').forEach(tabEl=>{
+    tabEl.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+      tabEl.classList.add('active');
+      document.getElementById(`panel-${tabEl.dataset.tab}`).classList.add('active');
+    });
+  });
+
+  document.getElementById('btn-download').onclick = downloadReport;
+  window.scrollTo({top: document.getElementById('results-section').offsetTop-20, behavior:'smooth'});
+}
+
+function tableOrEmpty(rows, headHtml, bodyHtml, emptyMsg){
+  if(!rows.length) return `<div class="empty-state">${emptyMsg}</div>`;
+  return `<div class="table-scroll"><table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+}
+
+function renderExpense(r){
+  const rows=r.cls.postExpense;
+  const head=`<th>Date</th><th>Merchant</th><th class="num">Amount (AED)</th><th>Sheet</th><th>Transaction ID</th>`;
+  const body=rows.map(s=>`<tr><td>${s.date}</td><td>${s.merchant}</td><td class="num">${fmt(s.amt)}</td><td>${s.sheet||''}</td><td>${s.txid||''}</td></tr>`).join('');
+  return `<div class="tab-desc">Genuinely missing from QuickBooks — no exact, date-shifted, or consolidated match found anywhere. Post these as new expenses.</div>`+
+    tableOrEmpty(rows, head, body, 'Nothing missing — every purchase on the statement is accounted for.');
+}
+function renderRefund(r){
+  const rows=r.cls.postRefund;
+  const head=`<th>Date</th><th>Merchant</th><th class="num">Amount (AED)</th><th>Sheet</th><th>Transaction ID</th>`;
+  const body=rows.map(s=>`<tr><td>${s.date}</td><td>${s.merchant}</td><td class="num">${fmt(s.amt)}</td><td>${s.sheet||''}</td><td>${s.txid||''}</td></tr>`).join('');
+  return `<div class="tab-desc">Genuinely missing refunds — money came back onto the card but was never recorded in QuickBooks.</div>`+
+    tableOrEmpty(rows, head, body, 'No missing refunds this period.');
+}
+function renderCorrect(r){
+  const rows=r.cls.correct;
+  const head=`<th>Date</th><th>Vendor</th><th class="num">Statement (AED)</th><th class="num">Current QB (AED)</th><th class="num">Diff</th><th>Note</th>`;
+  const body=rows.map(item=>{
+    const s=item.s[0], q=item.q[0];
+    return `<tr class="flag"><td>${s.date}</td><td>${s.merchant||q.name||''}</td><td class="num">${fmt(s.amt)}</td><td class="num">${fmt(q.amt)}</td><td class="num">${fmt(item.diff)}</td><td class="note">${item.note}${item.diffBadge?`<span class="diff-badge">${item.diffBadge}</span>`:''}</td></tr>`;
+  }).join('');
+  return `<div class="tab-desc">Same transaction already in QuickBooks, but posted at the wrong amount — usually because a discount was counted twice. Correct in place; don't post a new line.</div>`+
+    tableOrEmpty(rows, head, body, 'No mismatched amounts detected.');
+}
+function renderInvestigate(r){
+  const rows=r.cls.removeInvestigate;
+  const head=`<th>Date</th><th>Vendor / Memo</th><th class="num">Amount (AED)</th><th>Type</th>`;
+  const body=rows.map(q=>`<tr><td>${q.date}</td><td>${q.name||q.memo||''}</td><td class="num">${fmt(q.amt)}</td><td>${q.type||''}</td></tr>`).join('');
+  return `<div class="tab-desc">In QuickBooks with no matching statement transaction anywhere this period — likely a duplicate, a miscoded entry, or something paid through a different account.</div>`+
+    tableOrEmpty(rows, head, body, 'No unexplained QuickBooks entries.');
+}
+function renderMatched(r){
+  const rows=r.cls.matched;
+  const head=`<th>Date</th><th>Vendor</th><th>What matched</th><th>Note</th>`;
+  const body=rows.map(item=>{
+    const s0=item.s[0];
+    const sSum=item.s.reduce((a,x)=>a+x.amt,0).toFixed(2);
+    const qSum=item.q.reduce((a,x)=>a+x.amt,0).toFixed(2);
+    return `<tr><td>${s0.date}</td><td>${s0.merchant||''}</td><td>${item.s.length} statement line(s) (${sSum}) ↔ ${item.q.length} QuickBooks line(s) (${qSum})</td><td class="note">${item.note}${item.diffBadge?`<span class="diff-badge">${item.diffBadge}</span>`:''}</td></tr>`;
+  }).join('');
+  return `<div class="tab-desc">Split, consolidated, or net-of-refund postings that already tie out exactly — no action needed, plus any match that only tied out because of the tolerance setting above (flagged with its AED difference so you can sanity-check it). Listed here so nothing gets re-flagged next month.</div>`+
+    tableOrEmpty(rows, head, body, 'No consolidated/split/tolerance matches found this period.');
+}
+
+/* ============================== EXPORT ============================== */
+function downloadReport(){
+  const r = state.result;
+  const wb = XLSX.utils.book_new();
+
+  const summaryAOA = [
+    ['Qashio ⇄ QuickBooks Reconciliation'],
+    [],
+    ['Qashio statement balance', r.stmtTotal||0],
+    ['QuickBooks balance', r.qbTotal||0],
+    ['Gap', Math.round(((r.stmtTotal||0)-(r.qbTotal||0))*100)/100],
+    [],
+    ['Category','Count','Amount (AED)'],
+    ['Post as Expense', r.cls.postExpense.length, r.cls.postExpense.reduce((a,x)=>a+x.amt,0)],
+    ['Post as Refund', r.cls.postRefund.length, r.cls.postRefund.reduce((a,x)=>a+x.amt,0)],
+    ['Correct Existing Entries', r.cls.correct.length, r.cls.correct.reduce((a,x)=>a+x.diff,0)],
+    ['Remove / Investigate', r.cls.removeInvestigate.length, r.cls.removeInvestigate.reduce((a,x)=>a+x.amt,0)],
+    ['Already Matched (no action)', r.cls.matched.length, ''],
+    ['Monthly fuel allocations matched', r.fuel.results.length, r.fuel.results.reduce((a,x)=>a+x.q.reduce((t,y)=>t+y.amt,0),0)],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAOA), 'Summary');
+
+  const exp = [['Date','Merchant','Amount (AED)','Sheet','Transaction ID']]
+    .concat(r.cls.postExpense.map(s=>[s.date,s.merchant,s.amt,s.sheet,s.txid]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exp), '1-Post as Expense');
+
+  const ref = [['Date','Merchant','Amount (AED)','Sheet','Transaction ID']]
+    .concat(r.cls.postRefund.map(s=>[s.date,s.merchant,s.amt,s.sheet,s.txid]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ref), '2-Post as Refund');
+
+  const corr = [['Date','Vendor','Statement Amount','Current QB Amount','Difference','Note']]
+    .concat(r.cls.correct.map(item=>[item.s[0].date, item.s[0].merchant||item.q[0].name, item.s[0].amt, item.q[0].amt, item.diff, item.note]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(corr), '3-Correct Existing Entries');
+
+  const inv = [['Date','Vendor/Memo','Amount (AED)','Type']]
+    .concat(r.cls.removeInvestigate.map(q=>[q.date, q.name||q.memo, q.amt, q.type]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inv), '4-Remove or Investigate');
+
+  const matched = [['Date','Vendor','Statement Lines','QB Lines','Note']]
+    .concat(r.cls.matched.map(item=>[item.s[0].date, item.s[0].merchant, item.s.map(x=>x.amt).join('+'), item.q.map(x=>x.amt).join('+'), item.note]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matched), '5-Already Matched');
+
+  const fm = [['Month','Fuel txns','Statement net','QuickBooks','Difference','Status','Note']]
+    .concat(r.fuel.monthRows.map(m=>[m.month,m.count,m.net,m.qb,m.diff,m.status,m.note]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fm), '6-Fuel by Month');
+  const fs = [['Month','Station','Txns','Spend','Refunds','Net','Status','QB allocation']]
+    .concat(r.fuel.stationRows.map(x=>[x.month,x.station,x.count,x.spend,x.refunds,x.net,x.status,x.qb==null?'':x.qb]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fs), '7-Fuel by Station');
+  const an = r.analytics;
+  const anAOA = [['Metric','Value'],['Statement transactions',an.txns],['Total spend',an.spend],['Refunds',an.refunds],['Net spend',an.net],['Matched %',+an.matchRate.toFixed(1)],['Items needing action',an.actionCount],['Value needing action',an.actionValue],['Fuel spend',an.fuelSpend],['Fuel share %',+an.fuelShare.toFixed(1)],[],['Month','Spend','Txns']]
+    .concat(an.byMonth.map(x=>[x.key,x.amt,x.n])).concat([[],['Top merchants','Spend','Txns']]).concat(an.byMerchant.map(x=>[x.key,x.amt,x.n])).concat([[],['Cardholder','Spend','Txns']]).concat(an.byUser.map(x=>[x.key,x.amt,x.n]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(anAOA), '8-Analytics');
+
+  const rawS = [['Date','Sheet','Voucher','Transaction ID','Type','Merchant','Paid','Received','Balance']]
+    .concat(r.stmt.map(s=>[s.date,s.sheet,s.voucher,s.txid,s.type,s.merchant,s.paid,s.received,s.balance]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rawS), 'Raw Qashio Data');
+
+  const rawQ = [['Date','Type','Num','Name','Memo','Debit','Credit']]
+    .concat(r.qb.map(q=>[q.date,q.type,q.num,q.name,q.memo,q.debit,q.credit]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rawQ), 'Raw QuickBooks Data');
+
+  const now = new Date();
+  const fname = `Qashio_Reconciliation_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+</script>
+</body>
+</html>
